@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Message Encryptor</string>
+    <string name="pubKeyMsg">Your key to share:</string>
+    <string name="decrypt">Decrypt</string>
+    <string name="encryptedTxtMsg">Encrypted text to decrypt</string>
+    <string name="encryptButtonMsg">Encrypt</string>
+    <string name="otherKeyMsg">Someone else\'s key</string>
+    <string name="textToEncryptMsg">Text to encrypt</string>
+</resources>

@@ -14,6 +14,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.Exception
 import java.nio.charset.Charset
 import java.security.*
+import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 
@@ -24,14 +25,32 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val pair = generateKeyPair(2048)
-        val privateKey = pair.private
-        val publicKey = pair.public
-
         val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
-        val publicKeyText = Base64.encodeToString(publicKey.encoded, Base64.NO_WRAP)
-        publicKeyView.text = publicKeyText
+        val sharedPref = getPreferences(Context.MODE_PRIVATE)
+
+        if (!sharedPref.contains("publicKey") || !sharedPref.contains("privateKey")) {
+            with(sharedPref.edit()) {
+                val pair = generateKeyPair(2048)
+                val privateKey = pair.private
+                val publicKey = pair.public
+                val publicKeyText = Base64.encodeToString(publicKey.encoded, Base64.NO_WRAP)
+                val privateKeyText = Base64.encodeToString(privateKey.encoded, Base64.NO_WRAP)
+
+                putString("publicKey", publicKeyText)
+                putString("privateKey", privateKeyText)
+                commit()
+            }
+        }
+
+
+        publicKeyView.text = sharedPref.getString("publicKey", "")
+
+        val keySpec = PKCS8EncodedKeySpec(Base64.decode(sharedPref
+            .getString("privateKey", ""), Base64.NO_WRAP))
+        val privateKey = KeyFactory.getInstance("RSA").generatePrivate(keySpec)
+
+
 
         val copyToClipboard = View.OnClickListener {
             val toast =

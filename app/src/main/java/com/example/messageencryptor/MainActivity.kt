@@ -1,11 +1,18 @@
 package com.example.messageencryptor
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.View
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.Exception
+import java.nio.charset.Charset
 import java.security.*
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
@@ -21,10 +28,25 @@ class MainActivity : AppCompatActivity() {
         val privateKey = pair.private
         val publicKey = pair.public
 
-        publicKeyView.text = Base64.encodeToString(publicKey.encoded, Base64.DEFAULT)
+        val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        val publicKeyText = Base64.encodeToString(publicKey.encoded, Base64.NO_WRAP)
+        publicKeyView.text = publicKeyText
+
+        val copyToClipboard = View.OnClickListener {
+            val toast =
+                Toast.makeText(applicationContext, "Copied to clipboard", Toast.LENGTH_SHORT)
+            toast.show()
+            clipboardManager.setPrimaryClip(
+                ClipData.newPlainText("key", (it as TextView).text.toString()))
+        }
+
+        publicKeyView.setOnClickListener(copyToClipboard)
+
+        encryptedTextView.setOnClickListener(copyToClipboard)
 
         encryptButton.setOnClickListener(View.OnClickListener {
-            val msg = textToDecryptView.text.toString()
+            val msg = textToEncryptView.text.toString()
             val key = encryptKeyView.text.toString()
 
             if (msg.isEmpty() || key.isEmpty()) {
@@ -32,7 +54,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             try {
-                encryptedTextView.text = Base64.encodeToString(encrypt(msg, key), Base64.DEFAULT)
+                encryptedTextView.text = Base64.encodeToString(encrypt(msg, key), Base64.NO_WRAP)
             } catch (_: Exception) {}
         })
 
@@ -44,8 +66,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             try {
-                decryptedTextView.text =
-                    Base64.decode(decrypt(encryptedMsg, privateKey), Base64.DEFAULT).toString()
+                decryptedTextView.text = decrypt(encryptedMsg, privateKey)
+                    .toString(Charset.defaultCharset())
             } catch (_: Exception) {}
         })
     }
@@ -57,7 +79,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun stringToKey(key: String): PublicKey {
-        val keySpec = X509EncodedKeySpec(Base64.decode(key, Base64.DEFAULT))
+        val keySpec = X509EncodedKeySpec(Base64.decode(key, Base64.NO_WRAP))
         return KeyFactory.getInstance("RSA").generatePublic(keySpec)
     }
 
@@ -70,8 +92,9 @@ class MainActivity : AppCompatActivity() {
     fun decrypt(encryptedMsg: String, key: PrivateKey): ByteArray {
         val cipher: Cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
         cipher.init(Cipher.DECRYPT_MODE, key)
-        return cipher.doFinal(Base64.decode(encryptedMsg, Base64.DEFAULT))
+        return cipher.doFinal(Base64.decode(encryptedMsg, Base64.NO_WRAP))
     }
+
 }
 
 
